@@ -146,7 +146,9 @@ namespace Microsoft.ServiceFabric.Client.Http
             string requestId,
             CancellationToken cancellationToken)
         {
-            await this.SendAsyncHandleUnsuccessfulResponse(requestFunc, relativeUri, requestId, cancellationToken);
+            using (var response = await this.SendAsyncHandleUnsuccessfulResponse(requestFunc, relativeUri, requestId, cancellationToken))
+            {
+            }
         }
 
         /// <summary>
@@ -168,29 +170,31 @@ namespace Microsoft.ServiceFabric.Client.Http
             CancellationToken cancellationToken)
             where T : class
         {
-            var response = await this.SendAsyncHandleUnsuccessfulResponse(requestFunc, relativeUri, requestId, cancellationToken);
-            var retValue = default(T);
-
-            if (response.Content != null)
+            using (var response = await this.SendAsyncHandleUnsuccessfulResponse(requestFunc, relativeUri, requestId, cancellationToken))
             {
-                try
+                var retValue = default(T);
+
+                if (response.Content != null)
                 {
-                    var contentStream = await response.Content.ReadAsStreamAsync();
-                    using (var streamReader = new StreamReader(contentStream))
+                    try
                     {
-                        using (var reader = new JsonTextReader(streamReader))
+                        var contentStream = await response.Content.ReadAsStreamAsync();
+                        using (var streamReader = new StreamReader(contentStream))
                         {
-                            retValue = deserializeFunc.Invoke(reader);
+                            using (var reader = new JsonTextReader(streamReader))
+                            {
+                                retValue = deserializeFunc.Invoke(reader);
+                            }
                         }
                     }
+                    catch (JsonReaderException)
+                    {
+                        ServiceFabricHttpClientEventSource.Current.WarningMessage($"{this.ClientId}:{requestId}", SR.ErrorInvalidJsonInResponse);
+                    }
                 }
-                catch (JsonReaderException)
-                {
-                    ServiceFabricHttpClientEventSource.Current.WarningMessage($"{this.ClientId}:{requestId}", SR.ErrorInvalidJsonInResponse);
-                }
-            }
 
-            return retValue;
+                return retValue;
+            }
         }
 
         /// <summary>
@@ -211,29 +215,31 @@ namespace Microsoft.ServiceFabric.Client.Http
             string requestId,
             CancellationToken cancellationToken)
         {
-            var response = await this.SendAsyncHandleUnsuccessfulResponse(requestFunc, relativeUri, requestId, cancellationToken);
-            var retValue = default(IEnumerable<T>);
-
-            if (response.Content != null)
+            using (var response = await this.SendAsyncHandleUnsuccessfulResponse(requestFunc, relativeUri, requestId, cancellationToken))
             {
-                try
+                var retValue = default(IEnumerable<T>);
+
+                if (response.Content != null)
                 {
-                    var contentStream = await response.Content.ReadAsStreamAsync();
-                    using (var streamReader = new StreamReader(contentStream))
+                    try
                     {
-                        using (var reader = new JsonTextReader(streamReader))
+                        var contentStream = await response.Content.ReadAsStreamAsync();
+                        using (var streamReader = new StreamReader(contentStream))
                         {
-                            retValue = reader.ReadList(deserializeFunc);
+                            using (var reader = new JsonTextReader(streamReader))
+                            {
+                                retValue = reader.ReadList(deserializeFunc);
+                            }
                         }
                     }
+                    catch (JsonReaderException)
+                    {
+                        ServiceFabricHttpClientEventSource.Current.WarningMessage($"{this.ClientId}:{requestId}", SR.ErrorInvalidJsonInResponse);
+                    }
                 }
-                catch (JsonReaderException)
-                {
-                    ServiceFabricHttpClientEventSource.Current.WarningMessage($"{this.ClientId}:{requestId}", SR.ErrorInvalidJsonInResponse);
-                }
-            }
 
-            return retValue;
+                return retValue;
+            }
         }
 
         /// <summary>
@@ -254,29 +260,31 @@ namespace Microsoft.ServiceFabric.Client.Http
             string requestId,
             CancellationToken cancellationToken)
         {
-            var response = await this.SendAsyncHandleUnsuccessfulResponse(requestFunc, relativeUri, requestId, cancellationToken);
-            var retValue = default(PagedData<T>);
-
-            if (response.Content != null)
+            using (var response = await this.SendAsyncHandleUnsuccessfulResponse(requestFunc, relativeUri, requestId, cancellationToken))
             {
-                try
+                var retValue = default(PagedData<T>);
+
+                if (response.Content != null)
                 {
-                    var contentStream = await response.Content.ReadAsStreamAsync();
-                    using (var streamReader = new StreamReader(contentStream))
+                    try
                     {
-                        using (var reader = new JsonTextReader(streamReader))
+                        var contentStream = await response.Content.ReadAsStreamAsync();
+                        using (var streamReader = new StreamReader(contentStream))
                         {
-                            retValue = PagedDataConverter<T>.Deserialize(reader, deserializeFunc);
+                            using (var reader = new JsonTextReader(streamReader))
+                            {
+                                retValue = PagedDataConverter<T>.Deserialize(reader, deserializeFunc);
+                            }
                         }
                     }
+                    catch (JsonReaderException)
+                    {
+                        ServiceFabricHttpClientEventSource.Current.WarningMessage($"{this.ClientId}:{requestId}", SR.ErrorInvalidJsonInResponse);
+                    }
                 }
-                catch (JsonReaderException)
-                {
-                    ServiceFabricHttpClientEventSource.Current.WarningMessage($"{this.ClientId}:{requestId}", SR.ErrorInvalidJsonInResponse);
-                }
-            }
 
-            return retValue;
+                return retValue;
+            }
         }
 
         /// <summary>
